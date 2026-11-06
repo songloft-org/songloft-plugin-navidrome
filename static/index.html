@@ -1,0 +1,248 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <title>Navidrome 同步</title>
+    <link rel="stylesheet" href="static/css/style.css" />
+    <script src="static/js/app.js" defer></script>
+  </head>
+  <body>
+    <main class="page">
+      <header class="page-header">
+        <div class="heading">
+          <span class="material-symbols-outlined brand-icon" aria-hidden="true"
+            >sync</span
+          >
+          <div>
+            <h1>Navidrome 同步</h1>
+            <p class="muted">把喜欢的音乐，带到 Songloft。</p>
+          </div>
+        </div>
+        <button id="new-connection" class="btn btn-outlined" type="button">
+          <span class="material-symbols-outlined" aria-hidden="true">add</span
+          >添加连接
+        </button>
+      </header>
+      <div id="message" role="status" aria-live="polite" hidden></div>
+      <div id="compatibility" class="notice error" hidden>
+        当前宿主尚未支持原子歌单同步，请升级到包含 #558
+        支持的版本。连接测试仍可使用。
+      </div>
+      <nav
+        id="connections"
+        class="connection-tabs"
+        aria-label="Navidrome 连接"
+      ></nav>
+      <div class="layout">
+        <section aria-labelledby="connection-heading">
+          <h2 class="section-title" id="connection-heading">服务器连接</h2>
+          <form id="connection-form" class="card">
+            <div class="card-heading">
+              <span class="material-symbols-outlined" aria-hidden="true"
+                >dns</span
+              >
+              <h3>连接 Navidrome</h3>
+            </div>
+            <p class="help">直接连接你的音乐服务器，无需安装其他音源插件。</p>
+            <div class="text-field">
+              <input
+                id="connection-name"
+                name="name"
+                placeholder=" "
+                required
+                maxlength="80"
+                autocomplete="off"
+              /><label for="connection-name">连接名称</label>
+            </div>
+            <div class="text-field">
+              <input
+                id="server-url"
+                name="url"
+                type="url"
+                placeholder=" "
+                required
+                autocomplete="url"
+              /><label for="server-url">服务器地址</label>
+            </div>
+            <p id="identity-help" class="help field-help">
+              例如 https://music.example.com，支持子路径。
+            </p>
+            <div class="text-field">
+              <input
+                id="username"
+                name="username"
+                placeholder=" "
+                required
+                autocomplete="username"
+              /><label for="username">用户名</label>
+            </div>
+            <div class="text-field">
+              <input
+                id="password"
+                name="password"
+                type="password"
+                placeholder=" "
+                autocomplete="current-password"
+              /><label for="password">密码</label>
+            </div>
+            <p id="password-help" class="help field-help">
+              认证信息仅保存在服务器端。
+            </p>
+            <div class="actions">
+              <button
+                id="test-connection"
+                class="btn btn-outlined"
+                type="button"
+              >
+                测试连接</button
+              ><button class="btn btn-filled" type="submit">保存连接</button>
+            </div>
+            <button
+              id="delete-connection"
+              class="btn btn-text danger delete-button"
+              type="button"
+              hidden
+            >
+              移除连接
+            </button>
+          </form>
+          <div class="notice">
+            <span class="material-symbols-outlined" aria-hidden="true"
+              >info</span
+            >
+            <p>
+              同步只保存歌曲信息，播放时直接使用 Navidrome
+              音源，无需提前下载音频。
+            </p>
+          </div>
+        </section>
+        <div class="main-column">
+          <section aria-labelledby="scope-heading">
+            <h2 class="section-title" id="scope-heading">同步范围</h2>
+            <form id="scope-form" class="card">
+              <div class="card-heading">
+                <span class="material-symbols-outlined" aria-hidden="true"
+                  >queue_music</span
+                >
+                <h3>收藏与歌单</h3>
+                <button
+                  id="reload-catalog"
+                  class="btn btn-text"
+                  type="button"
+                  disabled
+                >
+                  刷新列表
+                </button>
+              </div>
+              <p class="help">
+                以 Navidrome 为准更新歌曲和顺序。在 Songloft
+                手动修改的成员会在下次同步时恢复。
+              </p>
+              <div id="scope-list">
+                <div class="empty-state">
+                  <span class="material-symbols-outlined" aria-hidden="true"
+                    >library_music</span
+                  >
+                  <p>先保存一个服务器连接</p>
+                  <p class="help">然后选择要同步的收藏和歌单。</p>
+                </div>
+              </div>
+              <fieldset id="schedule-fields" disabled>
+                <div class="setting-row">
+                  <div>
+                    <label for="automatic">自动同步</label>
+                    <p class="help">启用时同时将本插件加入主程序常驻列表。</p>
+                  </div>
+                  <label class="switch"
+                    ><input id="automatic" type="checkbox" /><span
+                      class="switch-track"
+                    ></span
+                    ><span class="switch-thumb"></span
+                  ></label>
+                </div>
+                <div class="text-field interval-field">
+                  <input
+                    id="interval"
+                    type="number"
+                    min="5"
+                    max="10080"
+                    step="1"
+                    value="30"
+                    placeholder=" "
+                    required
+                  /><label for="interval">同步间隔（分钟）</label>
+                </div>
+                <div
+                  id="preview"
+                  class="notice"
+                  aria-live="polite"
+                  hidden
+                ></div>
+                <div class="actions">
+                  <button
+                    id="preview-button"
+                    class="btn btn-outlined"
+                    type="button"
+                  >
+                    预览同步</button
+                  ><button id="save-scope" class="btn btn-filled" type="submit">
+                    保存并同步
+                  </button>
+                </div>
+              </fieldset>
+            </form>
+          </section>
+          <section aria-labelledby="status-heading">
+            <h2 class="section-title" id="status-heading">同步状态</h2>
+            <div class="card">
+              <div class="card-heading">
+                <span class="material-symbols-outlined" aria-hidden="true"
+                  >history</span
+                >
+                <h3 id="status-title">等待首次同步</h3>
+                <button
+                  id="sync-now"
+                  class="btn btn-text"
+                  type="button"
+                  disabled
+                >
+                  立即同步
+                </button>
+              </div>
+              <div id="sync-status" class="help">
+                保存同步范围后，即可开始同步。
+              </div>
+              <div id="sync-results"></div>
+            </div>
+          </section>
+        </div>
+      </div>
+    </main>
+    <div
+      id="remove-dialog"
+      class="dialog-overlay"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="remove-title"
+      aria-describedby="remove-description"
+    >
+      <div class="dialog">
+        <h2 id="remove-title" class="dialog-title">移除连接？</h2>
+        <p id="remove-description" class="dialog-content">
+          已同步的歌单和歌曲会保留。移除后，这个连接的歌曲将无法解析播放地址。只想暂停同步，可以关闭自动同步。
+        </p>
+        <div class="dialog-actions">
+          <button id="cancel-remove" class="btn btn-text" type="button">
+            取消</button
+          ><button id="confirm-remove" class="btn btn-filled" type="button">
+            移除连接
+          </button>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

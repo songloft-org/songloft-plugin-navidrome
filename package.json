@@ -1,0 +1,26 @@
+{
+  "name": "navidrome",
+  "version": "0.1.0",
+  "description": "Navidrome 收藏与歌单单向同步",
+  "private": true,
+  "scripts": {
+    "build": "songloft-plugin build",
+    "dev": "songloft-plugin dev",
+    "validate": "cd dist/_build && songloft-plugin validate",
+    "publish:release": "songloft-plugin publish",
+    "typecheck": "tsc --noEmit",
+    "test": "npm run build && node --test tests/*.test.mjs",
+    "format": "prettier --write src static tests scripts .github docs *.json *.md",
+    "check:format": "prettier --check src static tests scripts .github docs *.json *.md",
+    "test:release": "node --test tests/release_pipeline.test.mjs"
+  },
+  "devDependencies": {
+    "@songloft/client-sdk": "^2.18.0",
+    "@songloft/plugin-builder": "^2.18.0",
+    "@songloft/plugin-sdk": "^2.18.0",
+    "esbuild": "^0.28.2",
+    "jszip": "^3.10.2",
+    "prettier": "^3.9.10",
+    "typescript": "^5.7.0"
+  }
+}

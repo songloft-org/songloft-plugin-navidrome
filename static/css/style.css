@@ -1,0 +1,290 @@
+/* Shared theme.css/components.css come from the host, including live color schemes. */
+.page {
+  max-width: 1184px;
+  margin: 0 auto;
+  padding: 28px 24px 48px;
+  padding-bottom: clamp(48px, var(--sl-safe-bottom), 96px);
+}
+.page-header,
+.heading,
+.actions,
+.card-heading,
+.setting-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.page-header {
+  justify-content: space-between;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+.heading {
+  gap: 16px;
+}
+h1 {
+  font-size: 24px;
+  font-weight: 500;
+  line-height: 1.4;
+}
+h3 {
+  font-size: 16px;
+  font-weight: 500;
+}
+.muted,
+.help {
+  color: var(--md-on-surface-variant);
+  font-size: 13px;
+  line-height: 1.65;
+}
+.muted {
+  margin-top: 4px;
+}
+.brand-icon {
+  background: var(--md-primary-container);
+  color: var(--md-on-primary-container);
+  padding: 12px;
+  border-radius: var(--md-radius-lg);
+  font-size: 28px;
+}
+.layout {
+  display: grid;
+  grid-template-columns: 340px 1fr;
+  gap: 24px;
+}
+.main-column {
+  min-width: 0;
+}
+.card-heading {
+  margin-bottom: 12px;
+}
+.card-heading > .material-symbols-outlined {
+  color: var(--md-primary);
+}
+.card-heading h3 {
+  flex: 1;
+}
+.card-heading .btn {
+  padding: 0 12px;
+  flex-shrink: 0;
+}
+.card > .help {
+  margin-bottom: 24px;
+}
+.actions {
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+.field-help {
+  margin: -6px 0 20px;
+}
+.connection-tabs {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 24px;
+}
+.connection-tabs:empty {
+  margin: 0;
+}
+.connection-tabs .chip {
+  max-width: 100%;
+  height: auto;
+  min-height: 36px;
+  padding: 8px 14px;
+  overflow-wrap: anywhere;
+  text-align: left;
+}
+.notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  background: var(--md-surface-container-low);
+  color: var(--md-on-surface-variant);
+  border: 1px solid var(--md-outline-variant);
+  border-radius: var(--md-radius-md);
+  padding: 14px 16px;
+  font-size: 13px;
+  line-height: 1.6;
+  margin-bottom: 20px;
+  overflow-wrap: anywhere;
+}
+.notice .material-symbols-outlined {
+  font-size: 20px;
+  flex-shrink: 0;
+}
+.error,
+#message.error {
+  background: var(--md-error-container);
+  color: var(--md-on-error-container);
+  border-color: var(--md-error);
+}
+#message {
+  background: var(--md-primary-container);
+  color: var(--md-on-primary-container);
+  border-radius: var(--md-radius-md);
+  padding: 12px 16px;
+  margin-bottom: 20px;
+  font-size: 14px;
+}
+[hidden] {
+  display: none !important;
+}
+.empty-state {
+  text-align: center;
+  padding: 24px 8px 32px;
+  color: var(--md-on-surface-variant);
+}
+.empty-state > .material-symbols-outlined {
+  font-size: 40px;
+  color: var(--md-primary);
+  margin-bottom: 12px;
+}
+.empty-state p + p {
+  margin-top: 6px;
+}
+fieldset {
+  border: 0;
+  padding: 0;
+  min-width: 0;
+}
+.setting-row {
+  justify-content: space-between;
+  border-top: 1px solid var(--md-outline-variant);
+  padding: 20px 0;
+  margin-top: 8px;
+}
+.setting-row > div {
+  flex: 1;
+}
+.setting-row > div > label {
+  font-size: 14px;
+  font-weight: 500;
+}
+.switch {
+  flex-shrink: 0;
+}
+.switch:focus-within {
+  outline: 2px solid var(--md-primary);
+  outline-offset: 3px;
+  border-radius: 20px;
+}
+.interval-field {
+  max-width: 260px;
+  margin-top: 4px;
+}
+.scope-item {
+  padding: 14px 0;
+  border-top: 1px solid var(--md-outline-variant);
+}
+.scope-check {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+.scope-check input {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  accent-color: var(--md-primary);
+}
+.scope-check .count {
+  margin-left: auto;
+  font-size: 12px;
+  color: var(--md-on-surface-variant);
+  flex-shrink: 0;
+}
+.scope-item .text-field {
+  margin: 20px 0 4px 32px;
+}
+.scope-item .text-field input {
+  font-size: 14px;
+}
+.delete-button {
+  margin-top: 12px;
+  padding: 0 12px;
+}
+.danger {
+  color: var(--md-error);
+}
+.result-row {
+  border-top: 1px solid var(--md-outline-variant);
+  padding: 14px 0 0;
+  margin-top: 14px;
+  overflow-wrap: anywhere;
+}
+.result-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+}
+.result-title > .material-symbols-outlined {
+  font-size: 18px;
+  color: var(--md-primary);
+}
+.result-title.failed > .material-symbols-outlined {
+  color: var(--md-error);
+}
+.result-row .help {
+  margin: 4px 0 0 26px;
+}
+#sync-status {
+  white-space: pre-line;
+}
+#preview {
+  display: block;
+  white-space: pre-line;
+}
+button:focus-visible {
+  outline: 2px solid var(--md-primary);
+  outline-offset: 3px;
+}
+button:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+input:read-only {
+  opacity: 0.7;
+}
+.dialog-overlay .dialog {
+  max-height: 90vh;
+  overflow: auto;
+}
+@media (max-width: 800px) {
+  .layout {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+  .page {
+    padding: 20px 16px 40px;
+    padding-bottom: clamp(40px, var(--sl-safe-bottom), 96px);
+  }
+  .page-header {
+    align-items: flex-start;
+  }
+  h1 {
+    font-size: 21px;
+  }
+  .brand-icon {
+    padding: 10px;
+    font-size: 24px;
+  }
+  .card {
+    padding: 18px 16px;
+  }
+  .heading {
+    gap: 12px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition: none !important;
+    animation: none !important;
+  }
+}
