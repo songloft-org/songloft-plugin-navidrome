@@ -1,5 +1,7 @@
 # #558 local verification
 
+> This page preserves initial local-development status. See [first release acceptance](docs/release-20261106.en.md) for publication and store verification.
+
 [中文](VERIFICATION.md)
 
 ## Identity and environment
