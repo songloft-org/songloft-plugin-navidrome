@@ -1,7 +1,7 @@
 {
   "$schema": "https://raw.githubusercontent.com/songloft-org/plugin-toolchain/main/schemas/plugin.schema.json",
   "name": "Navidrome 同步",
-  "version": "2026.11.6.0",
+  "version": "2026.11.9.0",
   "description": "独立同步 Navidrome 收藏与歌单，支持自动更新与直接播放",
   "author": "Songloft Team",
   "homepage": "https://github.com/songloft-org/songloft-plugin-navidrome",
@@ -18,9 +18,9 @@
     "playlists.write"
   ],
   "updateUrl": "https://raw.githubusercontent.com/songloft-org/songloft-plugin-navidrome/main/plugin.json",
-  "download_url": "https://github.com/songloft-org/songloft-plugin-navidrome/releases/download/v2026.11.6.0/navidrome.jsplugin.zip",
-  "entryHash": "1f3ae5b33fa3d061e1e1699361557d5bf6d5d8155474a86ece4e52d2f8243ee6",
-  "zipHash": "8b5e66d3863549269bc39e467df3ff1654bece619e00f7bffbca8afc580ae1d7",
+  "download_url": "https://github.com/songloft-org/songloft-plugin-navidrome/releases/download/v2026.11.9.0/navidrome.jsplugin.zip",
+  "entryHash": "4c49743b55143d741f9ac011c63d9ca64d339f855d9ba6f841bd0a2a3bd6f120",
+  "zipHash": "a6c08aa5d0521d38504374e1e287c468656c79c6094ea966b498f224e6051920",
   "icon": "icon.svg",
-  "releaseSource": "cf7424c27c43e09c1583880e47d9dab1aad13ed2"
+  "releaseSource": "9586eb0df6b75e09a1817c2683c8d3293a11bd7c"
 }
