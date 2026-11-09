@@ -1,6 +1,7 @@
 import type { State, Connection, Selection, Status, SyncResult } from "./model";
 import { saveState } from "./model";
 import { snapshot } from "./client";
+import { mediaUrl } from "./media";
 
 // Compatibility with the published 2.18 SDK until replaceSongs is released.
 // The method is implemented by this change's host; no fallback to destructive multi-step writes.
@@ -50,6 +51,8 @@ export async function syncSelection(
         title: s.title,
         artist: s.artist || "",
         album: s.album || "",
+        coverUrl: s.coverArt ? mediaUrl(c, "cover", s.coverArt) : "",
+        lyricRemoteUrl: mediaUrl(c, "lyric", s.id),
         duration: s.duration,
         sourceData: JSON.stringify({ connectionId: c.id, songId: s.id }),
         dedupKey: "navidrome:" + c.id + ":" + s.id,

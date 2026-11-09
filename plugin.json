@@ -11,6 +11,7 @@
   "minHostVersion": "2.13.10",
   "permissions": [
     "storage",
+    "fs",
     "songs.read",
     "songs.write",
     "playlists.read",

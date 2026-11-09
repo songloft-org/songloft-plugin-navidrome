@@ -2,6 +2,7 @@ import {
   createRouter,
   createMusicUrlHandler,
   jsonResponse,
+  parseQuery,
 } from "@songloft/plugin-sdk";
 import type { HTTPRequest, HTTPResponse } from "@songloft/plugin-sdk";
 import {
@@ -14,6 +15,7 @@ import {
 import type { Connection, State } from "./model";
 import { request, catalog, buildUrl, snapshot } from "./client";
 import { syncConnection, safeError, hasAtomicPlaylists } from "./sync";
+import { cover, lyrics } from "./media";
 
 const router = createRouter();
 let state: State;
@@ -187,6 +189,23 @@ router.post("/api/connections/:id/sync", async (_req, p) => {
   void runSync(c).catch((e) => songloft.log.error(safeError(e)));
   return jsonResponse({ started: true }, 202);
 });
+function mediaId(req: HTTPRequest): string {
+  const id = parseQuery(req.query).id;
+  if (!id) throw new UserError("媒体来源 ID 无效");
+  return id;
+}
+router.get("/media/:connectionId/cover", async (req, p) =>
+  cover(await connection(p.connectionId), mediaId(req)),
+);
+router.get("/media/:connectionId/lyric", async (req, p) =>
+  // LyricFetcher consumes the existing plugin lyric envelope.
+  jsonResponse({
+    code: 0,
+    data: {
+      lyric: await lyrics(await connection(p.connectionId), mediaId(req)),
+    },
+  }),
+);
 router.post(
   "/api/music/url",
   createMusicUrlHandler({

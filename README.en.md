@@ -34,8 +34,10 @@ Following MIoT, non-documentation main commits release in order using Beijing-ti
 - Repeated syncs and restarts reuse playlists. A source marker in the description recovers a successful creation whose mapping was not saved. Deleted target playlists are recreated on the next sync; edited source markers stop updates to protect repurposed playlists.
 - Pausing, deselecting, removing connections and deleted remote playlists preserve local playlists and global song records. Removing a connection prevents its remote songs from resolving; the page explains this before removal.
 - Sync jobs and configuration writes are serialized; conflicts return 409. Due jobs are checked every 30 seconds and resume after a randomized 3–10 second startup delay. Retries back off up to six hours or the user's longer configured interval.
-- Sync imports metadata only and explicitly disables automatic host audio probing. It never fetches audio files. Playback resolves original song IDs without searching other platforms. Cover art and lyrics are outside the first release.
-- Credentials stay in server-side plugin storage; passwords are not returned to the page. Song records contain connection and song IDs only. Uninstallation follows the host's storage lifecycle. Do not publish the plugin data directory.
+- Sync imports titles, artists, album names and cover/lyric references, explicitly disabling automatic host audio probing. It never fetches audio files. Playback resolves original song IDs without searching other platforms.
+- Covers are fetched server-side using Navidrome's `coverArt` ID. Lyrics use the original song ID through `getLyricsBySongId`, supporting embedded plain text and synchronized lyrics, preferring valid synchronized tracks and applying millisecond offsets. Navidrome must provide this lyric API; there is no title-based substitute search. Missing album names or covers are not guessed.
+- After updating the plugin, run “Sync now” once to backfill references and refresh album names on existing remote records. No playlist deletion or reimport is needed; song and playlist IDs remain stable. Covers and lyrics are fetched on demand; retrieval failures do not change synced membership.
+- Credentials stay in server-side plugin storage; passwords are not returned to the page. Songs contain source IDs and credential-free internal media paths. The `fs` permission stores covers in the plugin's own data directory; the host returns original image bytes without redirecting clients to authenticated URLs. Repeated requests reuse the cover file and replace it atomically. Uninstallation follows the host's storage lifecycle. Do not publish the plugin data directory.
 
 Initial limits: 20 connections and 200 sync targets per connection. Navidrome must provide valid audio durations; missing duration or video entries fail the affected playlist while preserving existing members.
 
@@ -53,5 +55,7 @@ npm run check:format
 Generated with `npx create-songloft-plugin@latest`, Vanilla + static. Validation checks the built manifest. The archive includes QuickJS bytecode. Until the public SDK includes the new types, `sync.ts` provides temporary compatibility types for these two APIs; host implementations and official SDK types are maintained in the parent repository/toolchain.
 
 Behavior tests use controlled Navidrome responses and host interfaces. Real QuickJS/SQLite/browser coverage and screenshots are documented in [Verification](VERIFICATION.en.md). Actual Navidrome accounts, native devices and speakers require separate acceptance checks.
+
+The embedded lyric, album and cover fix was verified with an isolated real Navidrome 0.64.2 instance and synthetic FLAC files, including an old-plugin upgrade, backfilling existing records and host restart. See [metadata verification](docs/metadata-558.en.md). The reporter's server version, private library and native clients still require acceptance testing.
 
 Related request: [songloft-org/songloft#558](https://github.com/songloft-org/songloft/issues/558).

@@ -38,11 +38,30 @@ export function harness(shared) {
     malformed: false,
     empty: false,
     apiError: false,
+    lyrics: [],
+    cover: new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0, 0xff, 0x80]),
+    coverType: "image/png",
+    coverStatus: 200,
   };
   const requests = [],
     timers = [];
   const copy = (value) => JSON.parse(JSON.stringify(value));
   const songloft = {
+    fs: {
+      async rename(from, to) {
+        if (db.failFileRename) throw Error("injected file rename failure");
+        db.files.set(to, db.files.get(from));
+        db.files.delete(from);
+      },
+      async unlink(path) {
+        db.files.delete(path);
+      },
+      async writeFile(path, data, options) {
+        if (options?.encoding !== "base64")
+          throw Error("cover must preserve binary");
+        db.files.set(path, Buffer.from(data, "base64"));
+      },
+    },
     storage: {
       async get(key) {
         return db.files.get(key) || null;
@@ -106,6 +125,7 @@ export function harness(shared) {
   const context = vm.createContext({
     songloft,
     console,
+    btoa,
     Date,
     Math,
     Map,
@@ -140,7 +160,16 @@ export function harness(shared) {
           },
         });
       const name = parsed.pathname.split("/").pop();
+      if (name === "getCoverArt")
+        return {
+          ok: upstream.coverStatus === 200,
+          status: upstream.coverStatus,
+          headers: new Headers({ "Content-Type": upstream.coverType }),
+          arrayBuffer: async () => upstream.cover.buffer,
+        };
       let body = { status: "ok" };
+      if (name === "getLyricsBySongId")
+        body.lyricsList = { structuredLyrics: upstream.lyrics };
       if (name === "getPlaylists")
         body.playlists = { playlist: upstream.playlists };
       if (name === "getStarred2" && !upstream.malformed)
@@ -156,14 +185,18 @@ export function harness(shared) {
     },
   });
   vm.runInContext(bundle.outputFiles[0].text, context);
-  async function call(method, path, body) {
-    const response = await context.onHTTPRequest({
+  async function raw(method, path, body) {
+    const [pathname, query = ""] = path.split("?");
+    return context.onHTTPRequest({
       method,
-      path,
+      path: pathname,
       body: body === undefined ? "" : JSON.stringify(body),
-      query: "",
+      query,
       headers: {},
     });
+  }
+  async function call(method, path, body) {
+    const response = await raw(method, path, body);
     return {
       status: response.statusCode || 200,
       body: JSON.parse(response.body),
@@ -206,6 +239,7 @@ export function harness(shared) {
     timers,
     context,
     call,
+    raw,
     settle,
     save,
     sync,
