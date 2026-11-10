@@ -14,7 +14,13 @@ import {
 } from "./model";
 import type { Connection, State } from "./model";
 import { request, catalog, buildUrl, snapshot } from "./client";
-import { syncConnection, safeError, hasAtomicPlaylists } from "./sync";
+import {
+  syncConnection,
+  safeError,
+  hasAtomicPlaylists,
+  hasSharedTags,
+} from "./sync";
+import { marker, plannedName } from "./naming";
 import { cover, lyrics } from "./media";
 
 const router = createRouter();
@@ -94,7 +100,7 @@ router.get("/api/state", async () => {
     connections: s.connections.map(publicConnection),
     statuses: s.statuses,
     busy,
-    atomicSupported: hasAtomicPlaylists(),
+    atomicSupported: hasAtomicPlaylists() && hasSharedTags(),
   });
 });
 router.post("/api/connections", async (req) =>
@@ -107,8 +113,11 @@ router.post("/api/connections", async (req) =>
       throw new UserError("最多支持 20 个连接");
     await request(c, "ping");
     if (c.automatic) {
-      if (!hasAtomicPlaylists())
-        throw new UserError("宿主缺少原子同步接口，请先升级", 409);
+      if (!hasAtomicPlaylists() || !hasSharedTags())
+        throw new UserError(
+          "宿主缺少原子同步或歌单标签接口，请升级到包含 #562 支持的版本",
+          409,
+        );
       await keepAlive();
     }
     const next = {
@@ -153,13 +162,26 @@ router.post("/api/connections/:id/preview", async (req, p) => {
     c,
   );
   const previews = [];
+  const s = await current();
+  const playlists = await songloft.playlists.list();
   for (const selection of valid.selections) {
     const remote = await snapshot(c, selection.key);
+    const name = plannedName(s, valid, selection, remote.name, playlists);
     previews.push({
       key: selection.key,
-      name: selection.targetName || c.name + " · " + remote.name,
+      name,
       count: remote.songs.length,
     });
+    // Reserve the preview candidate so two selections cannot promise the same name.
+    const description = marker(valid, selection);
+    const existing = playlists.find((p) => p.description === description);
+    if (existing) existing.name = name;
+    else
+      playlists.push({
+        id: -previews.length,
+        name,
+        description,
+      } as (typeof playlists)[number]);
   }
   return jsonResponse({ previews });
 });
@@ -182,8 +204,11 @@ async function runSync(c: Connection): Promise<void> {
 router.post("/api/connections/:id/sync", async (_req, p) => {
   const c = await connection(p.id);
   if (!c.selections.length) throw new UserError("请先保存同步范围");
-  if (!hasAtomicPlaylists())
-    throw new UserError("宿主缺少原子同步接口，请先升级", 409);
+  if (!hasAtomicPlaylists() || !hasSharedTags())
+    throw new UserError(
+      "宿主缺少原子同步或歌单标签接口，请升级到包含 #562 支持的版本",
+      409,
+    );
   if (busy) throw new UserError("正在同步或保存，请稍后重试", 409);
   // Begin now to reserve the lock; the host event pump completes the background promise.
   void runSync(c).catch((e) => songloft.log.error(safeError(e)));

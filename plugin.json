@@ -15,7 +15,9 @@
     "songs.read",
     "songs.write",
     "playlists.read",
-    "playlists.write"
+    "playlists.write",
+    "tags.read",
+    "tags.write"
   ],
   "updateUrl": "https://raw.githubusercontent.com/songloft-org/songloft-plugin-navidrome/main/plugin.json",
   "download_url": "https://github.com/songloft-org/songloft-plugin-navidrome/releases/download/v2026.11.9.0/navidrome.jsplugin.zip",

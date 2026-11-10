@@ -29,8 +29,8 @@
       </header>
       <div id="message" role="status" aria-live="polite" hidden></div>
       <div id="compatibility" class="notice error" hidden>
-        当前宿主尚未支持原子歌单同步，请升级到包含 #558
-        支持的版本。连接测试仍可使用。
+        当前宿主尚未支持完整歌单同步，请升级到包含 #562
+        歌单标签支持的版本。连接测试仍可使用。
       </div>
       <nav
         id="connections"
@@ -57,6 +57,16 @@
                 maxlength="80"
                 autocomplete="off"
               /><label for="connection-name">连接名称</label>
+            </div>
+            <div class="text-field">
+              <input
+                id="connection-tag"
+                name="tagName"
+                placeholder=" "
+                maxlength="50"
+                autocomplete="off"
+              />
+              <label for="connection-tag">连接标签（可选，如家中 NAS）</label>
             </div>
             <div class="text-field">
               <input

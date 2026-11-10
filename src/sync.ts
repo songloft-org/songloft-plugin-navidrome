@@ -2,6 +2,13 @@ import type { State, Connection, Selection, Status, SyncResult } from "./model";
 import { saveState } from "./model";
 import { snapshot } from "./client";
 import { mediaUrl } from "./media";
+import {
+  allocateName,
+  isNameConflict,
+  managedPlaylist,
+  marker,
+  plannedName,
+} from "./naming";
 
 // Compatibility with the published 2.18 SDK until replaceSongs is released.
 // The method is implemented by this change's host; no fallback to destructive multi-step writes.
@@ -13,8 +20,55 @@ export function hasAtomicPlaylists(): boolean {
     typeof (songloft.playlists as AtomicPlaylists).replaceSongs === "function"
   );
 }
-function marker(c: Connection, selection: Selection): string {
-  return "[navidrome:" + c.id + ":" + encodeURIComponent(selection.key) + "]";
+// Reuse SDK method types while published SDK 2.18 lacks playlist tag methods.
+type SharedTags = typeof songloft.tags & {
+  getPlaylistTags: typeof songloft.tags.getSongTags;
+  bindPlaylists: typeof songloft.tags.bindSongs;
+  unbindPlaylists: typeof songloft.tags.unbindSongs;
+};
+export function hasSharedTags(): boolean {
+  return (
+    typeof songloft.tags?.list === "function" &&
+    typeof (songloft.tags as SharedTags)?.bindPlaylists === "function"
+  );
+}
+async function sourceTags(c: Connection): Promise<number[]> {
+  const ids: number[] = [];
+  for (const name of new Set([
+    "Navidrome",
+    ...(c.tagName ? [c.tagName] : []),
+  ])) {
+    const lookup = async () => {
+      let offset = 0;
+      while (true) {
+        const page = await songloft.tags.list({
+          keyword: name,
+          limit: 200,
+          offset,
+        });
+        const match = page.find(
+          (t) => t.name.toLowerCase() === name.toLowerCase(),
+        );
+        if (match || page.length < 200) return match;
+        offset += page.length;
+      }
+    };
+    let tag = await lookup();
+    if (!tag) {
+      try {
+        tag = await songloft.tags.create({ name });
+      } catch (error) {
+        if (!/UNIQUE constraint failed: song_tags\.name/i.test(String(error)))
+          throw error;
+        tag = await lookup();
+        if (!tag) throw error;
+      }
+    }
+    if (!tag || !Number.isSafeInteger(tag.id) || tag.id <= 0)
+      throw new Error("来源标签创建失败");
+    ids.push(tag.id);
+  }
+  return ids;
 }
 export async function syncSelection(
   state: State,
@@ -23,20 +77,46 @@ export async function syncSelection(
 ): Promise<SyncResult> {
   if (!hasAtomicPlaylists())
     throw new Error("宿主缺少原子歌单同步接口，请升级到包含 #558 支持的版本");
+  if (!hasSharedTags())
+    throw new Error("宿主缺少歌单自定义标签接口，请升级到包含 #562 支持的版本");
   const remote = await snapshot(c, selection.key);
   const mapKey = c.id + "/" + selection.key;
   const description = marker(c, selection);
   const playlists = await songloft.playlists.list();
-  let playlist = playlists.find((p) => p.id === state.mappings[mapKey]) || null;
-  // Validate ownership on every run, and recover a create that succeeded before mapping was persisted.
-  if (playlist && playlist.description !== description)
-    throw new Error("目标歌单的同步标记已变更，已停止更新");
-  if (!playlist) {
-    const found = playlists.filter((p) => p.description === description);
-    if (found.length > 1)
-      throw new Error("发现重复的同步歌单，请保留一份后重试");
-    playlist = found[0] || null;
+  let playlist = managedPlaylist(state, c, selection, playlists);
+  let name = plannedName(state, c, selection, remote.name, playlists);
+  const occupied = new Set(
+    playlists.filter((p) => p.id !== playlist?.id).map((p) => p.name),
+  );
+  for (let attempt = 0; attempt < 100; attempt++) {
+    try {
+      if (!playlist)
+        playlist = await songloft.playlists.create({
+          name,
+          type: "normal",
+          description,
+        });
+      else if (playlist.name !== name)
+        await songloft.playlists.update(playlist.id, { name });
+      if (!playlist) throw new Error("创建歌单失败");
+      break;
+    } catch (error) {
+      if (selection.targetName || !isNameConflict(error)) throw error;
+      occupied.add(name);
+      name = allocateName(remote.name, occupied, false);
+      if (attempt === 99) throw error;
+    }
   }
+  if (!playlist) throw new Error("创建歌单失败");
+  state.mappings[mapKey] = playlist.id;
+  state.naming ??= {};
+  state.naming[mapKey] = {
+    requested: selection.targetName || remote.name,
+    explicit: !!selection.targetName,
+    allocated: name,
+  };
+  await saveState(state);
+  const tagIDs = await sourceTags(c);
   // Read and validate the complete remote snapshot before touching host membership.
   const ids: number[] = [];
   for (let offset = 0; offset < remote.songs.length; offset += 100) {
@@ -66,23 +146,15 @@ export async function syncSelection(
       throw new Error("歌曲写入结果不完整，已保留原歌单");
     ids.push(...records.map((r) => r.id));
   }
-  if (!playlist) {
-    playlist = await songloft.playlists.create({
-      name: selection.targetName || c.name + " · " + remote.name,
-      type: "normal",
-      description,
-    });
-    if (!playlist) throw new Error("创建歌单失败");
-  }
-  state.mappings[mapKey] = playlist.id;
-  await saveState(state);
   const previous = await songloft.playlists.getSongs(playlist.id);
   const before = new Set(previous.map((s) => s.id)),
     after = new Set(ids);
   await (songloft.playlists as AtomicPlaylists).replaceSongs(playlist.id, ids);
-  const name = selection.targetName || c.name + " · " + remote.name;
-  if (playlist.name !== name)
-    await songloft.playlists.update(playlist.id, { name });
+  for (const tagID of tagIDs) {
+    await (songloft.tags as SharedTags).bindPlaylists(tagID, [playlist.id]);
+    for (let offset = 0; offset < ids.length; offset += 100)
+      await songloft.tags.bindSongs(tagID, ids.slice(offset, offset + 100));
+  }
   selection.name = remote.name;
   return {
     key: selection.key,

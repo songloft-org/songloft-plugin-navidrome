@@ -11,6 +11,87 @@ const members = (h, index = 1) =>
       (id) => JSON.parse(h.db.songs.find((s) => s.id === id).sourceData).songId,
     );
 
+test("shared source tags and stable unique favorite names survive restart and manual rename", async () => {
+  const h = harness();
+  h.db.playlists.push({ id: 900, name: "收藏", description: "built-in" });
+  h.db.members.set(900, []);
+  const c = await h.save({
+    tagName: "家中 NAS",
+    selections: [{ key: "starred", name: "收藏", targetName: "" }],
+  });
+  await h.sync(c);
+  const target = h.db.playlists.find((p) => p.id !== 900);
+  assert.equal(target.name, "收藏-Navidrome");
+  const source = h.db.tags.find((t) => t.name === "Navidrome");
+  const connection = h.db.tags.find((t) => t.name === "家中 NAS");
+  assert.deepEqual(
+    [...h.db.playlistTags.get(target.id)],
+    [source.id, connection.id],
+  );
+  for (const id of h.db.members.get(target.id))
+    assert.deepEqual([...h.db.songTags.get(id)], [source.id, connection.id]);
+  const second = await h.save({ name: "另一个连接", selections: c.selections });
+  await h.sync(second);
+  assert.equal(h.db.playlists.at(-1).name, "收藏-Navidrome (2)");
+  h.db.playlists.splice(
+    h.db.playlists.findIndex((p) => p.id === 900),
+    1,
+  );
+  const restarted = harness(h.db);
+  await restarted.sync(c);
+  assert.equal(target.name, "收藏-Navidrome");
+  target.name = "我的手动名称";
+  await restarted.sync(c);
+  assert.equal(target.name, "我的手动名称");
+  assert.equal(h.db.tags.length, 2);
+});
+
+test("only owned legacy defaults migrate; explicit name conflicts preserve playlist membership", async () => {
+  const h = harness();
+  let c = await h.save({
+    selections: [{ key: "starred", name: "收藏", targetName: "" }],
+  });
+  await h.sync(c);
+  const target = h.db.playlists[0];
+  const state = JSON.parse(h.db.files.get("state.json"));
+  delete state.naming;
+  target.name = c.name + " · 收藏";
+  h.db.files.set("state.json", JSON.stringify(state));
+  const restarted = harness(h.db);
+  await restarted.sync(c);
+  assert.equal(target.name, "收藏");
+  h.db.playlists.push({ id: 999, name: "指定名称", description: "user" });
+  c = await restarted.save({
+    ...c,
+    password: "",
+    selections: [{ key: "starred", name: "收藏", targetName: "指定名称" }],
+  });
+  const before = [...h.db.members.get(target.id)];
+  restarted.upstream.starred = [song("new")];
+  await restarted.sync(c);
+  assert.deepEqual(h.db.members.get(target.id), before);
+  assert.equal(target.name, "收藏");
+  assert.match((await status(restarted, c)).results[0].error, /同名|存在|占用/);
+});
+
+test("automatic naming retries only a confirmed concurrent name conflict and rejects old tag hosts before writes", async () => {
+  const h = harness();
+  const c = await h.save({
+    selections: [{ key: "starred", name: "收藏", targetName: "" }],
+  });
+  h.db.raceName = "收藏";
+  await h.sync(c);
+  assert.equal(h.db.playlists.at(-1).name, "收藏-Navidrome");
+  const failing = harness();
+  const other = await failing.save({ selections: c.selections });
+  failing.db.failNameCreate = true;
+  await failing.sync(other);
+  assert.equal(failing.db.playlists.length, 0);
+  assert.equal(failing.db.songs.length, 0);
+  delete h.songloft.tags.bindPlaylists;
+  assert.equal((await h.sync(c)).status, 409);
+});
+
 test("independent sync reuses identities, updates membership and exact remote order, protects unrelated playlists", async () => {
   const h = harness(),
     c = await h.save();

@@ -30,6 +30,9 @@ export function harness(shared) {
       ...db.songs.map((s) => s.id),
       ...db.playlists.map((p) => p.id),
     ) + 1;
+  db.tags ||= [];
+  db.songTags ||= new Map();
+  db.playlistTags ||= new Map();
   const upstream = {
     starred: [song("a", { starred: "2026-11-01" })],
     playlists: [{ id: "p1", name: "夜间音乐", songCount: 2 }],
@@ -93,6 +96,42 @@ export function harness(shared) {
         });
       },
     },
+    tags: {
+      async list({ keyword = "" } = {}) {
+        return copy(db.tags.filter((t) => t.name.includes(keyword)));
+      },
+      async create({ name }) {
+        if (db.tags.some((t) => t.name.toLowerCase() === name.toLowerCase()))
+          throw Error("UNIQUE constraint failed: song_tags.name");
+        const tag = { id: Math.max(0, ...db.tags.map((t) => t.id)) + 1, name };
+        db.tags.push(tag);
+        return copy(tag);
+      },
+      async getSongTags(id) {
+        return copy(db.tags.filter((t) => db.songTags.get(id)?.has(t.id)));
+      },
+      async getPlaylistTags(id) {
+        return copy(db.tags.filter((t) => db.playlistTags.get(id)?.has(t.id)));
+      },
+      async bindSongs(tagID, ids) {
+        if (!db.tags.some((t) => t.id === tagID)) throw Error("tag not found");
+        for (const id of ids) {
+          const set = db.songTags.get(id) || new Set();
+          set.add(tagID);
+          db.songTags.set(id, set);
+        }
+        return { bound: ids.length };
+      },
+      async bindPlaylists(tagID, ids) {
+        if (!db.tags.some((t) => t.id === tagID)) throw Error("tag not found");
+        for (const id of ids) {
+          const set = db.playlistTags.get(id) || new Set();
+          set.add(tagID);
+          db.playlistTags.set(id, set);
+        }
+        return { bound: ids.length };
+      },
+    },
     playlists: {
       async list() {
         return copy(db.playlists);
@@ -101,6 +140,17 @@ export function harness(shared) {
         return copy(db.playlists.find((p) => p.id === id) || null);
       },
       async create(input) {
+        if (db.raceName === input.name) {
+          db.playlists.push({
+            id: id++,
+            name: input.name,
+            description: "concurrent",
+          });
+          db.raceName = undefined;
+        }
+        if (db.playlists.some((p) => p.name === input.name))
+          throw Error("playlist with the same name already exists");
+        if (db.failNameCreate) throw Error("injected network failure");
         const p = { ...input, id: id++ };
         db.playlists.push(p);
         db.members.set(p.id, []);
@@ -112,6 +162,8 @@ export function harness(shared) {
         );
       },
       async update(id, fields) {
+        if (db.playlists.some((p) => p.id !== id && p.name === fields.name))
+          throw Error("playlist with the same name already exists");
         const p = db.playlists.find((p) => p.id === id);
         Object.assign(p, fields);
         return copy(p);

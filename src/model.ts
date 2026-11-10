@@ -6,6 +6,7 @@ export interface Selection {
 export interface Connection {
   id: string;
   name: string;
+  tagName?: string;
   url: string;
   username: string;
   password: string;
@@ -35,6 +36,10 @@ export interface State {
   connections: Connection[];
   statuses: Record<string, Status>;
   mappings: Record<string, number>;
+  naming?: Record<
+    string,
+    { requested: string; explicit: boolean; allocated: string }
+  >;
 }
 export const emptyState = (): State => ({
   connections: [],
@@ -75,6 +80,9 @@ export function validateConnection(
   old?: Connection,
 ): Connection {
   const name = String(input.name || "").trim();
+  const tagName = String(input.tagName ?? old?.tagName ?? "").trim();
+  if (Array.from(tagName).length > 50 || tagName.includes(","))
+    throw new UserError("连接标签最多 50 个字符，不能包含逗号");
   const url = String(input.url || "")
     .trim()
     .replace(/\/+$/, "");
@@ -134,6 +142,7 @@ export function validateConnection(
   return {
     id,
     name,
+    tagName,
     url,
     username,
     password,

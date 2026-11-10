@@ -248,6 +248,7 @@ function start() {
     const c = current();
     draftSelections = structuredCloneSafe(c?.selections || []);
     $("connection-name").value = c?.name || "";
+    $("connection-tag").value = c?.tagName || "";
     $("server-url").value = c?.url || "";
     $("server-url").readOnly = !!c;
     $("username").value = c?.username || "";
@@ -292,6 +293,7 @@ function start() {
     return {
       id: c?.id,
       name: $("connection-name").value.trim(),
+      tagName: $("connection-tag").value.trim(),
       url: $("server-url").value.trim(),
       username: $("username").value.trim(),
       password: $("password").value,

@@ -8,7 +8,7 @@ An independent Songloft plugin that continuously mirrors Navidrome starred songs
 
 1. Upload `dist/navidrome.jsplugin.zip` to Songloft and open the plugin page.
 2. Enter a connection name, Navidrome base URL, username and password. Reverse-proxy subpaths work; do not append `/rest`. Test and save the connection.
-3. Select starred songs and playlists. Optional target names override the default “connection · remote playlist” name. Preview, then save and sync.
+3. Select starred songs and playlists. Optional target names override the remote playlist name. Conflicts allocate “name-Navidrome”, then “name-Navidrome (2)”. Explicit conflicting names report an error. Preview, then save and sync.
 4. Enable automatic sync if desired: 5–10080 minutes, default 30. Enabling preserves other keep-alive entries and adds `navidrome` to the host's keep-alive list. Disabling does not remove that entry, which may serve other connections.
 5. Play the regular playlists from Songloft. Speakers can reuse them; dedicated voice commands are outside this plugin's scope.
 
@@ -16,13 +16,21 @@ The page directly uses host-injected `theme.css`, `components.css` and the `Song
 
 ## Host compatibility
 
-**Requires a build containing the host changes for songloft-org/songloft#558.** The existing 2.13.9 release lacks `playlists.replaceSongs` and `songs.create(..., {probeMetadata: false})`. The plugin checks the atomic method. Older hosts can configure and test connections but cannot sync; there is no destructive multi-step fallback.
+**Requires a build containing the host changes for songloft-org/songloft#558 and songloft-org/songloft#562.** The existing 2.13.9 release lacks `playlists.replaceSongs` and `songs.create(..., {probeMetadata: false})`. The plugin checks atomic sync and shared playlist-tag methods. Older hosts can configure and test connections but cannot sync; there is no destructive multi-step fallback.
 
 The manifest specifies `2.13.10`, the next planned stable host version containing these APIs; this work does not publish a stable host release. This field is compatibility information, not a replacement for runtime checks. Development hosts containing the APIs can be used.
 
 ## Automated releases
 
 Following MIoT, non-documentation main commits release in order using Beijing-time `YYYY.M.D.N`, starting at `.0` daily. Markdown/docs-only commits do not release or consume a revision. Failed checks retain queue position; reruns recover. Releases record the source SHA, and the root manifest receives real download URLs and package hashes. A repository without tags can bootstrap from its root commit. See [release rules](docs/releases.en.md).
+
+## Shared source tags and names
+
+Each sync resolves the shared `Navidrome` tag and an optional connection tag (for example, “Home NAS”), then binds them to the target playlists and imported songs. Existing custom tags and system labels survive. Tag browsing separates playlists and songs. The host must expose `tags.bindPlaylists`; older hosts stop before writing.
+
+Names stay globally unique. Once allocated, a name stays stable across restarts and when a shorter candidate becomes available. Manual host renames survive while naming configuration is unchanged. Only a verified owned legacy default “connection · remote name” migrates, preserving IDs and source markers. Preview uses the same allocator. Concurrent automatic-name conflicts retry; other errors stop the sync.
+
+[Local #562 verification](docs/issue-562.en.md).
 
 ## Sync behavior
 
