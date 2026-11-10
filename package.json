@@ -1,6 +1,6 @@
 {
   "name": "navidrome",
-  "version": "2026.11.9.0",
+  "version": "2026.11.11.0",
   "description": "Navidrome 收藏与歌单单向同步",
   "private": true,
   "scripts": {
